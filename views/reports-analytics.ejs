@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinXpress - Reports & Analytics</title>
+    <link rel="stylesheet" href="/bootstrap/icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+    <script src="/jquery/jquery.js"></script>
+    <script src="/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="shortcut icon" href="/images/icon.png" type="image/x-icon">
+    </head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light header-bg position-fixed top-0 start-0 end-0 z-index-x shadow">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/dashboard">
+            <img src="/images/icon.png" width="30" height="24" class="d-inline-block align-text-top">
+            FinXpress
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="/dashboard">Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/budgets">Budget Manager</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/expenses">Expense Tracker</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active" href="/reports-analytics">Reports & Analytics</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/finance-goal">Financial Goal</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link" href="/settings">Settings</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a>
+              </li>
+            </ul>
+            <div class="ms-lg-auto d-sm-none d-lg-inline-block dropdown">
+              <a class="nav-link dropdown-toggle" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="/images/userlogo.png" width="25" class="me-2">
+                <span>Hi <%= userData.name.split(' ')[0] %></span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDarkDropdownMenuLink">
+                <li><a class="dropdown-item" href="/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                <li><a class="dropdown-item" href="/settings/manage-categories"><i class="bi bi-database-gear me-2"></i>Manage Categories</a></li>
+                <li><a class="dropdown-item" href="/settings/security"><i class="bi bi-key-fill me-2"></i>Change Password</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <%
+        let spent = 0;
+        let budget = 0;
+        let totalIncome = 0;
+        const monthlySavesObject = new Object();
+        const monthlyExpenseObject = new Object();
+        const monthlyChartData = new Object();
+        const expenseChartData = new Object();
+        for(const budgetInfo of budgetData){
+          budget += budgetInfo.amount;
+          totalIncome += budgetInfo.income;
+          let saved = monthlySavesObject[budgetInfo.month] || budgetInfo.income;
+          for(const category in budgetInfo.categories){
+            saved -= budgetInfo.categories[category].spent
+          }
+          monthlySavesObject[budgetInfo.month] = saved;
+        }
+        for(const expenseInfo of expenseData){
+          spent += expenseInfo.amount;
+          const object = expenseChartData[expenseInfo.category] || new Object();
+          object.spent = object.spent || 0;
+          object.spent += expenseInfo.amount;
+          expenseChartData[expenseInfo.category] = object;
+          
+          const obj = monthlyChartData[expenseInfo.month] || new Object();
+          const catObj = obj[expenseInfo.category] || new Object();
+          catObj.spent = catObj.spent || 0;
+          catObj.spent += expenseInfo.amount;
+          obj[expenseInfo.category] = catObj;
+          monthlyChartData[expenseInfo.month] = obj;
+          
+          let expenses = monthlyExpenseObject[expenseInfo.month] || 0;
+          expenses += expenseInfo.amount;
+          monthlyExpenseObject[expenseInfo.month] = expenses;
+        }
+        const saved = totalIncome - spent;
+        const budgetCreated = new Intl.NumberFormat('en-US').format(budgetData.length);
+        const totalSaved = new Intl.NumberFormat('en-US').format(saved);
+        const totalSpent = new Intl.NumberFormat('en-US').format(spent);
+        const totalBudget = new Intl.NumberFormat('en-US').format(budget);
+        const monthlySaves = JSON.stringify(monthlySavesObject);
+        const monthlyExpense = JSON.stringify(monthlyExpenseObject);
+        const monthlyChart = JSON.stringify(monthlyChartData);
+        const expenseChart = JSON.stringify(expenseChartData);
+        const l1 = Object.keys(monthlySavesObject).length < 13 ? Object.keys(monthlySavesObject).length : 12;
+        const l2 = Object.keys(monthlyExpenseObject).length < 13 ? Object.keys(monthlyExpenseObject).length : 12;
+        const m1 = l1 > 1 ? 'Months' : 'Month';
+        const m2 = l2 > 1 ? 'Months' : 'Month';
+        const dataArray = [
+          {title: 'Budget Created', icon: 'bi-folder-plus', value: budgetCreated},
+          {title: 'Total Budget', icon: 'bi-cash-stack', value: `₦${totalBudget}`},
+          {title: 'Total Expenses', icon: 'bi-cash-coin', value: `₦${totalSpent}`},
+          {title: 'Saved', icon: 'bi-piggy-bank', value: `₦${totalSaved}`}
+        ];
+      %>
+      <div class="position-relative mt-100 mb-5 mx-2 mb-4 border border-2 border-light p-5 rounded-2 shadow bg-white">
+        <h2 class="text-center">Analytic Report</h2>
+        <div class="row my-5">
+          <%
+          for(const data of dataArray) {
+            %>
+            <div class="col-12 col-md-6 col-lg-3">
+              <div class="row shadow px-2 py-3 my-2 bg-light rounded" style="margin: auto 0px;">
+                <div class="col-8 height-100 d-flex align-items-center justify-content-center">
+                  <div class="w-100 text-start">
+                    <nav class="fs-2 text-info"><%= data.value %></nav>
+                    <nav class="fs-13 fw-bold text-slategrey"><%= data.title %></nav>
+                  </div>
+                </div>
+                <div class="col-4 height-100 d-flex align-items-center justify-content-center">
+                  <div class="w-100 text-end text-info" style="font-size: 45px;"><i class="bi <%= data.icon %>"></i></div>
+                </div>
+              </div>
+            </div>
+            <%
+          }
+          %>
+        </div>
+        <%
+        if(budgetData.length != 0 && budget != 0 && spent != 0 && saved != 0){
+          %>
+          <div class="w-75 mx-auto">
+            <div class="row mb-5">
+              <div class="col-md-12 col-lg-6">
+                <div class="rounded bg-light p-3 m-3">
+                  <h4 class="text-center mb-5">Total Expenses</h4>
+                  <canvas data-for-chart="<%= expenseChart %>"></canvas>
+                </div>
+              </div>
+              <div class="col-md-12 col-lg-6">
+                <div class="rounded bg-light p-3 m-3">
+                  <h4 class="text-center mb-5" id="chartTitle"></h4>
+                  <div class="m-5">
+                    <canvas data-for-month="" data-for-month-chart="<%= monthlyChart %>"></canvas>
+                  </div>
+                  <div class="card d-flex flex-row mx-5">
+                    <button data-prev onclick="slideToMonth(-1)" class="btn btn-secondary rounded-end-0 fs-5"><i class="bi bi-chevron-left"></i></button>
+                    <div class="flex-grow-1 position-relative">
+                      <nav id="monthTitle" class="cursor-pointer text-center py-2" data-bs-toggle="dropdown" aria-expanded="false"></nav>
+                      <ul class="dropdown-menu w-100 height-max-300 scrollbar position-absolute start-50 translate-middle-x">
+                        <%
+                        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                        for(const key in monthlyChartData){
+                          const [year, mon] = key.split('-');
+                          monIndex = parseInt(mon) - 1;
+                          const month = months[monIndex];
+                          %>
+                          <li class="text-center dropdown-item cursor-pointer" onclick="initChart('<%= key %>')"><%= month %> <%= year %></li>
+                          <%
+                        }
+                        %>
+                      </ul>
+                    </div>
+                    <button data-next onclick="slideToMonth(1)" class="btn btn-secondary rounded-start-0 fs-5"><i class="bi bi-chevron-right"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="my-5">
+              <h4 class="text-center">Expenses of Last <%= l2 %> <%= m2 %></h4>
+              <canvas data-for-expenses="<%= monthlyExpense %>"></canvas>
+            </div>
+            <div class="my-5">
+              <h4 class="text-center">Savings of Last <%= l1 %> <%= m1 %></h4>
+              <canvas data-for-savings="<%= monthlySaves %>"></canvas>
+            </div>
+          </div>
+          <%
+        }
+        %>
+      </div>
+      <script src="/jquery/toast.js"></script>
+      <script src="/chart/chart.umd.min.js"></script>
+      <script>
+
+        let chart = null;
+        let chartIndex = 0;
+        const date = new Date();
+        const dates = new Array();
+        const chartData = new Array();
+        const chartLabels = new Array();
+        const savesData = new Array();
+        const savesLabels = new Array();
+        const expenseData = new Array();
+        const expenseLabels = new Array();
+        const expenseChartObj = JSON.parse($('canvas[data-for-chart]').attr('data-for-chart'));
+        const monthlySavesObject = JSON.parse($('canvas[data-for-savings]').attr('data-for-savings'));
+        const monthlyExpenseObject = JSON.parse($('canvas[data-for-expenses]').attr('data-for-expenses'));
+        const monthlyChartObj = JSON.parse($('canvas[data-for-month-chart]').attr('data-for-month-chart'));
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        const year = date.getFullYear();
+        const m = date.getMonth() + 1;
+        const month = String(m).padStart(2, '0');
+        const dateStr = `${year}-${month}`;
+        const monthlySavesKeys = Object.keys(monthlySavesObject);
+        const monthlyExpenseKeys = Object.keys(monthlyExpenseObject);
+
+        monthlySavesKeys.splice(12);
+        monthlyExpenseKeys.splice(12);
+
+        for (const element of monthlySavesKeys) {
+          const [year, mon] = element.split('-');
+          monIndex = parseInt(mon) - 1;
+          const month = months[monIndex];
+          savesLabels.push(`${month} ${year}`);
+          savesData.push(monthlySavesObject[element]);
+        }
+
+        for (const element of monthlyExpenseKeys) {
+          const [year, mon] = element.split('-');
+          monIndex = parseInt(mon) - 1;
+          const month = months[monIndex];
+          expenseLabels.push(`${month} ${year}`);
+          expenseData.push(monthlyExpenseObject[element]);
+        }
+
+        for (const key in expenseChartObj) {
+          chartLabels.push(key);
+          chartData.push(expenseChartObj[key].spent);
+        }
+
+        for (const key in monthlyChartObj) {
+          dates.push(key);
+        }
+
+        dates.reverse();
+        const closestDate = findClosestDate(dates, dateStr);
+
+        initChart(closestDate);
+
+        new Chart($('canvas[data-for-chart]'), {
+          type: 'pie',
+          data: {
+            labels: chartLabels,
+            datasets: [{
+              label: '',
+              data: chartData,
+              borderWidth: 0
+            }]
+          },
+          options: {}
+        });
+
+        new Chart($('canvas[data-for-expenses]'), {
+          type: 'line',
+          data: {
+            labels: expenseLabels,
+            datasets: [{
+              label: '',
+              data: expenseData,
+              fill: false,
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1
+            }]
+          }
+        });
+        
+        new Chart($('canvas[data-for-savings]'), {
+          type: 'bar',
+          data: {
+            labels: savesLabels,
+            datasets: [{
+              label: '',
+              data: savesData,
+              backgroundColor: 'rgba(255, 205, 86, 0.6)',
+              borderColor: 'rgb(255, 205, 86)'
+            }]
+          }
+        });
+        
+        function findClosestDate(datesArray, targetDate) {
+          const targetTime = new Date(targetDate).getTime();
+          let closestDate = null;
+          let minDifference = Infinity;
+
+          for (const d of datesArray) {
+            const date = new Date(d);
+            const currentTime = date.getTime();
+            const difference = Math.abs(currentTime - targetTime);
+
+            if (difference < minDifference) {
+              minDifference = difference;
+              closestDate = date;
+            }
+          }
+
+          const year = closestDate.getFullYear();
+          const m = closestDate.getMonth() + 1;
+          const month = String(m).padStart(2, '0');
+          const dateStr = `${year}-${month}`;
+
+          return dateStr;
+        }
+
+        function initChart(month){
+          if(chart != null){
+            chart.destroy();
+          }
+          chartIndex = dates.indexOf(month);
+          $('button[data-prev], button[data-next]').prop('disabled', false);
+          if(chartIndex == 0)
+            $('button[data-prev]').prop('disabled', true);
+          if(chartIndex == (dates.length - 1))
+            $('button[data-next]').prop('disabled', true);
+          const chrtData = new Array();
+          const chrtLabels = new Array();
+          for (const key in monthlyChartObj[month]) {
+            chrtLabels.push(key);
+            chrtData.push(monthlyChartObj[month][key].spent);
+          }
+
+          const [year, mon] = month.split('-');
+          monIndex = parseInt(mon) - 1;
+          const mnth = months[monIndex];
+          $('h4#chartTitle').html(`${mnth} ${year} Expenses`);
+          $('nav#monthTitle').html(`${mnth} ${year}`);
+          
+          chart = new Chart($('canvas[data-for-month-chart]'), {
+            type: 'doughnut',
+            data: {
+              labels: chrtLabels,
+              datasets: [{
+                label: '',
+                data: chrtData,
+                borderWidth: 0
+              }]
+            },
+            options: {}
+          });
+        }
+
+        function slideToMonth(figure) {
+          chartIndex += figure;
+          const month = dates[chartIndex];
+          initChart(month);
+        }
+
+      </script>
+</body>
+</html>

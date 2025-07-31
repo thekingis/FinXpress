@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinXpress - Budget Manager</title>
+    <link rel="stylesheet" href="/bootstrap/icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+    <script src="/jquery/jquery.js"></script>
+    <script src="/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="shortcut icon" href="/images/icon.png" type="image/x-icon">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light header-bg position-fixed top-0 start-0 end-0 z-index-x shadow">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/dashboard">
+            <img src="/images/icon.png" width="30" height="24" class="d-inline-block align-text-top">
+            FinXpress
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="/dashboard">Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active" href="/budgets">Budget Manager</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/expenses">Expense Tracker</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/reports-analytics">Reports & Analytics</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/finance-goal">Financial Goal</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link" href="/settings">Settings</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a>
+              </li>
+            </ul>
+            <div class="ms-lg-auto d-sm-none d-lg-inline-block dropdown">
+              <a class="nav-link dropdown-toggle" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="/images/userlogo.png" width="25" class="me-2">
+                <span>Hi <%= userData.name.split(' ')[0] %></span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDarkDropdownMenuLink">
+                <li><a class="dropdown-item" href="/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                <li><a class="dropdown-item" href="/settings/manage-categories"><i class="bi bi-database-gear me-2"></i>Manage Categories</a></li>
+                <li><a class="dropdown-item" href="/settings/security"><i class="bi bi-key-fill me-2"></i>Change Password</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div class="position-relative mt-100 mb-5 mx-2 mb-4 border border-2 border-light p-5 rounded-2 shadow bg-white">
+        <div class="mb-4 position-relative d-flex">
+          <a class="btn btn-success shadow rounded-1 mx-sm-auto ms-md-auto me-md-0" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+            <i class="bi bi-plus-square-dotted me-3"></i>
+            <span>Create New Budget</span>
+          </a>
+        </div>
+        <div id="container">
+          <% if(budgetData.length == 0){ %>
+            <div class="text-center mt-5" id="no-data">
+              <img src="/images/no-data.png" width="300">
+              <h3>No Data Available</h3>
+            </div>
+          <% } else {
+            %>
+            <h2 class="text-center">Budgets</h2>
+            <div id="budgetDataView">
+              <%
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                budgetData.forEach(object => {
+                  let spent = 0;
+                  Object.values(object.categories).forEach(value => {
+                    spent += value.spent;
+                  });
+                  const budgetId = object._id.toString();
+                  const [year, mon] = object.month.split('-');
+                  monIndex = parseInt(mon) - 1;
+                  const month = months[monIndex];
+                  const categoriesStr = JSON.stringify(object.categories);
+                  const perc = Math.round((spent / object.amount) * 100);
+                  const bgColor = perc < 30 ? 'alert-success' : perc < 70 ? 'alert-warning' : 'alert-danger';
+                  const spentStr = new Intl.NumberFormat('en-US').format(spent);
+                  const amount = new Intl.NumberFormat('en-US').format(object.amount);
+                  %>
+                  <div id="<%= budgetId %>" data-for-budget-view class="shadow card d-flex flex-row my-5 position-relative">
+                    <div class="text-center text-white p-5 bg-info d-flex flex-column justify-content-center align-items-center" style="width: 120px;">
+                      <span class="fs-2"><%= year %></span>
+                      <span class="fs-5"><%= month %></span>
+                    </div>
+                    <div class="flex-grow-1 position-relative">
+                      <div id="chartView-<%= budgetId %>" class="position-absolute top-0 bottom-0 start-0 end-0 text-nowrap overflow-x-auto text-center pt-3">
+                        <%
+                        Object.keys(object.categories).forEach(key => {
+                          const spnt = object.categories[key].spent;
+                          const bdgt = object.categories[key].budget;
+                          %>
+                          <div class="d-inline-block m-2 rounded-2 bg-light p-2" style="width: 120px;">
+                            <canvas data-for-pie="<%= key %>" data-for-budget-id="<%= budgetId %>" data-for-spent="<%= spnt %>" data-for-budget="<%= bdgt %>"></canvas>
+                          </div>
+                          <%
+                        });
+                        %>
+                      </div>
+                    </div>
+                    <div class="bg-light d-flex flex-column justify-content-evenly align-items-center" style="width: 50px;">
+                      <button class="btn btn-sm btn-secondary" data-for-edit
+                      data-for-income="<%= object.income %>"
+                      data-for-category="<%= categoriesStr %>"
+                      data-budget-id="<%= budgetId %>"
+                      data-for-month="<%= object.month %>"
+                      onclick="editBudget($(this))"
+                      title="Edit Budget">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger" data-budget-id="<%= budgetId %>" onclick="deleteBudget($(this))" title="Delete Budget">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                    <div class="alert <%= bgColor %> shadow-sm py-1 position-absolute top-0 start-50 translate-middle">
+                      Spent(₦<%= spentStr %> of ₦<%= amount %>)
+                    </div>
+                  </div>
+                  <%
+                }); 
+              %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+      <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="staticBackdropLabel">Create New Budget</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">        
+              <div class="mb-3">
+                <label for="month" class="form-label">Select Month</label>
+                <input type="month" class="form-control" id="month" />
+              </div>
+              <div class="mb-3">
+                <label for="income" class="form-label">Income</label>
+                <div class="input-group">
+                  <span class="input-group-text">₦</span>
+                  <input type="text" class="form-control" id="income" aria-describedby="helpBlock" />
+                </div>
+                  <div id="helpBlock" class="form-text text-danger d-none">
+                    Your budget cannot be higher than your income
+                  </div>
+              </div>
+              <div id="budgetView"></div>
+              <div class="mb-3">
+                <label class="form-label">Select Category</label>
+                <div class="input-group">
+                  <button id="switchBtn" onclick="toggleGroup()" class="btn btn-secondary input-group-text fs-5" title="Add New Category"><i class="bi bi-plus"></i></button>
+                  <select class="form-select" id="selectCategory">
+                    <option value="">--Choose Category--</option>
+                    <%
+                    if(categoryData){
+                      categoryData.categoryList.sort();
+                      for(const name of categoryData.categoryList){
+                        %>
+                        <option value="<%= name %>"><%= name %></option>
+                        <%
+                      }
+                    } 
+                    %>
+                  </select>
+                  <input type="text" class="form-control d-none" placeholder="Category Name" id="addCategory">
+                  <input type="number" class="form-control" placeholder="Budget Amount" id="budgetAmount">
+                  <button onclick="createX()" class="btn btn-success fs-5 position-relative" title="Add Budget" id="checkBtn">
+                    <i class="bi bi-check2"></i>
+                    <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+                  </button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="amount" class="form-label">Total Budget</label>
+                <div class="input-group">
+                  <span class="input-group-text">₦</span>
+                  <input type="text" class="form-control" id="amount" value="0" readonly />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="rounded-2 bg-danger text-white py-1 px-2 my-3 me-auto" id="errorLog"></div>
+              <button type="button" class="btn btn-secondary btn-sm rounded-1" data-bs-dismiss="modal">Cancel</button>
+              <button id="create-budget" type="button" class="btn btn-success btn-sm rounded-1 position-relative" onclick="createBudget($(this))">
+                <span>Create</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="exampleModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Delete Budget</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              Deleting this budget is irreversible. Do you want to delete it?
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" id="deleteBudgetBtn" class="btn btn-sm btn-danger position-relative" onclick="emitDelete($(this))">
+                <span>Delete</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="staticBackdrop1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdrop1Label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="staticBackdrop1Label">Edit Budget</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="budget-id">
+              <div class="mb-3">
+                <label for="monthEdit" class="form-label">Select Month</label>
+                <input type="month" class="form-control" id="monthEdit" readonly />
+              </div>
+              <div class="mb-3">
+                <label for="incomeEdit" class="form-label">Income</label>
+                <div class="input-group">
+                  <span class="input-group-text">₦</span>
+                  <input type="text" class="form-control" id="incomeEdit" aria-describedby="helpBlockEdit" />
+                </div>
+                <div id="helpBlockEdit" class="form-text text-danger d-none">
+                  Your budget cannot be higher than your income
+                </div>
+              </div>
+              <div id="budgetViewEdit"></div>
+              <div class="mb-3">
+                <label class="form-label">Select Category</label>
+                <div class="input-group">
+                  <button id="switchBtnEdit" onclick="toggleGroupX()" class="btn btn-secondary input-group-text fs-5" title="Add New Category"><i class="bi bi-plus"></i></button>
+                  <select class="form-select" id="selectCategoryEdit">
+                    <option value="">--Choose Category--</option>
+                    <%
+                    if(categoryData){
+                      for(const name of categoryData.categoryList){
+                        %>
+                        <option value="<%= name %>"><%= name %></option>
+                        <%
+                      }
+                    } 
+                    %>
+                  </select>
+                  <input type="text" class="form-control d-none" placeholder="Category Name" id="addCategoryEdit">
+                  <input type="number" class="form-control" placeholder="Budget Amount" id="budgetAmountEdit">
+                  <button onclick="createXY()" class="btn btn-success fs-5 position-relative" title="Add Budget" id="checkBtnEdit">
+                    <i class="bi bi-check2"></i>
+                    <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+                  </button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="amountEdit" class="form-label">Total Budget</label>
+                <div class="input-group">
+                  <span class="input-group-text">₦</span>
+                  <input type="text" class="form-control" id="amountEdit" value="0" readonly />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="rounded-2 bg-danger text-white py-1 px-2 my-3 me-auto" id="errorLogEdit"></div>
+              <button type="button" class="btn btn-secondary btn-sm rounded-1" data-bs-dismiss="modal">Cancel</button>
+              <button id="edit-budget" type="button" class="btn btn-success btn-sm rounded-1 position-relative" onclick="saveBudgetEdit($(this))">
+                <span>Save</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script src="http://localhost:8000/socket.io/socket.io.js"></script>
+      <script src="/jquery/toast.js"></script>
+      <script src="/chart/chart.umd.min.js"></script>
+      <script>
+        let totalBudget = 0;
+        let isActive = true;
+        let isActiveX = true;
+        let budgetId = null;
+        let budgetList = new Object();
+        const canvasObject = new Object();
+        var myModalEl = document.getElementById('staticBackdrop');
+        var myModalElX = document.getElementById('staticBackdrop1');
+        const socket = io();
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = formatToTwoDigits(date.getMonth() + 1);
+        const minDate = `${year}-${month}`;
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        $('input#month').attr('min', minDate);
+        $('div#errorLog, div#errorLogEdit').html('').hide();
+
+        var myModal = new bootstrap.Modal(myModalEl, {});
+        var editModal = new bootstrap.Modal(myModalElX, {});
+        var exampleModal = new bootstrap.Modal(document.getElementById('exampleModal'), {});
+
+        $('input#income, input#incomeEdit').keyup(function(){
+          const income = parseInt($(this).val()) || 0;
+          const helpBlock = $(this).attr('aria-describedby');
+          $(this).removeClass('border-danger');
+          $('div#'+helpBlock).addClass('d-none');
+          if(totalBudget > income){
+            $(this).addClass('border-danger');
+            $('div#'+helpBlock).removeClass('d-none');
+          }
+        });
+        
+        $('canvas[data-for-pie]').each(function(){
+          const spent = parseInt($(this).attr('data-for-spent'));
+          const budget = parseInt($(this).attr('data-for-budget'));
+          const budgetId = $(this).attr('data-for-budget-id');
+          const category = $(this).attr('data-for-pie');
+          const balance = budget - spent;
+          const pieObject = canvasObject[budgetId] || new Object();
+
+          const chart = new Chart(this, {
+            type: 'doughnut',
+            data: {
+              datasets: [{
+                data: [balance, spent],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              plugins: {
+                title: {
+                  display: true,
+                  text: category,
+                  padding: 0
+                }
+              }
+            }
+          });
+          pieObject[category] = chart;
+          canvasObject[budgetId] = pieObject;
+        });
+
+        myModalEl.addEventListener('hidden.bs.modal', () => {
+          $('input#month, input#income, input#addCategory, input#budgetAmount, select#selectCategory').val('');
+          $('input#amount').val('0');
+          $('div#budgetView').html('');
+          $('div#errorLog').hide();
+          $('button#checkBtn i').removeClass('invisible');
+          $('button#checkBtn img').addClass('invisible');
+          $('button#switchBtn, button#checkBtn').prop('disabled', false);
+          $('input#income').removeClass('border-danger');
+          $('div#helpBlock').addClass('d-none');
+          budgetList = new Object();
+          totalBudget = 0;
+          if(!isActive)
+            toggleGroup();
+        });
+        
+        myModalElX.addEventListener('hidden.bs.modal', () => {
+          $('input#budget-id, input#incomeEdit, input#budget-spent, input#monthEdit, input#addCategoryEdit, input#budgetAmountEdit, select#selectCategoryEdit').val('');
+          $('input#amountEdit').val('0');
+          $('div#budgetViewEdit').html('');
+          $('div#errorLogEdit').hide();
+          $('button#checkBtnEdit i').removeClass('invisible');
+          $('button#checkBtnEdit img').addClass('invisible');
+          $('button#switchBtnEdit, button#checkBtnEdit').prop('disabled', false);
+          $('input#incomeEdit').removeClass('border-danger');
+          $('div#helpBlockEdit').addClass('d-none');
+          budgetList = new Object();
+          totalBudget = 0;
+          if(!isActiveX)
+            toggleGroupX();
+        });
+
+        $('input#addCategory, input#budgetAmount').keypress(evt => {
+          if(evt.keyCode == 13)
+          createX();
+        });
+
+        $('input#addCategoryEdit, input#budgetAmountEdit').keypress(evt => {
+          if(evt.keyCode == 13)
+          createXY();
+        });
+
+        function createX(){
+          if(isActive){
+            const category = $('select#selectCategory').val();
+            let budgetAmount = $('input#budgetAmount').val();
+            if(category.length == 0){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Please select a category</span>');
+              toast.show();
+              return;
+            }
+            if(category in budgetList){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category already added to the budget</span>');
+              toast.show();
+              return;
+            }
+            if(budgetAmount.length == 0 || parseInt(budgetAmount) < 1){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Specify the amount for your budget</span>');
+              toast.show();
+              return;
+            }
+            budgetAmount = parseInt(budgetAmount);
+            totalBudget += budgetAmount;
+            $('input#income').removeClass('border-danger');
+            $('div#helpBlock').addClass('d-none');
+            const income = parseInt($('input#income').val()) || 0;
+            if(totalBudget > income){
+              $('input#income').addClass('border-danger');
+              $('div#helpBlock').removeClass('d-none');
+            }
+            const budgetHtml = `
+                <div class="input-group p-2 mb-1">
+                  <span class="form-control">${category}</span>
+                  <span class="input-group-text">₦${new Intl.NumberFormat('en-US').format(budgetAmount)}</span>
+                  <button onclick="removeBudget($(this), true)" data-for-spent="false" class="btn btn-danger fs-5" data-for-category="${category}" data-for-amount="${budgetAmount}" title="Remove Budget">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+            `;
+            const tb = new Intl.NumberFormat('en-US').format(totalBudget);
+            $('input#amount').val(tb);
+            $('div#budgetView').append($(budgetHtml));
+            $('input#budgetAmount').val('');
+            $('select#selectCategory').val('');
+            budgetList[category] = {budget: budgetAmount, spent: 0};
+            $('select#selectCategory').get(0).scrollIntoView({behavior:"smooth"});
+            return;
+          }
+          const categoryName = $('input#addCategory').val().trim();
+          if(categoryName.length == 0){
+            const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category name connot be empty</span>');
+            toast.show();
+            return;
+          }
+          $('button#checkBtn i').addClass('invisible');
+          $('button#checkBtn img').removeClass('invisible');
+          $('button#switchBtn, button#checkBtn').prop('disabled', true);
+          socket.emit('add-category', {categoryName: categoryName});
+        }
+
+        function createXY(){
+          if(isActiveX){
+            const category = $('select#selectCategoryEdit').val();
+            let budgetAmount = $('input#budgetAmountEdit').val();
+            if(category.length == 0){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Please select a category</span>');
+              toast.show();
+              return;
+            }
+            if(category in budgetList){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category already added to the budget</span>');
+              toast.show();
+              return;
+            }
+            if(budgetAmount.length == 0 || parseInt(budgetAmount) < 1){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Specify the amount for your budget</span>');
+              toast.show();
+              return;
+            }
+            budgetAmount = parseInt(budgetAmount);
+            totalBudget += budgetAmount;
+            $('input#incomeEdit').removeClass('border-danger');
+            $('div#helpBlockEdit').addClass('d-none');
+            const income = parseInt($('input#incomeEdit').val()) || 0;
+            if(totalBudget > income){
+              $('input#incomeEdit').addClass('border-danger');
+              $('div#helpBlockEdit').removeClass('d-none');
+            }
+            const budgetHtml = `
+                <div class="input-group p-2 mb-1">
+                  <span class="form-control">${category}</span>
+                  <span class="input-group-text">₦${new Intl.NumberFormat('en-US').format(budgetAmount)}</span>
+                  <button onclick="removeBudget($(this), false)" class="btn btn-danger fs-5" data-for-category="${category}" data-for-amount="${budgetAmount}" title="Remove Budget">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+            `;
+            const tb = new Intl.NumberFormat('en-US').format(totalBudget);
+            $('input#amountEdit').val(tb);
+            $('div#budgetViewEdit').append($(budgetHtml));
+            $('input#budgetAmountEdit').val('');
+            $('select#selectCategoryEdit').val('');
+            budgetList[category] = {budget: budgetAmount, spent: 0};
+            $('select#selectCategoryEdit').get(0).scrollIntoView({behavior:"smooth"});
+            return;
+          }
+          const categoryName = $('input#addCategoryEdit').val().trim();
+          if(categoryName.length == 0){
+            const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category name connot be empty</span>');
+            toast.show();
+            return;
+          }
+          $('button#checkBtnEdit i').addClass('invisible');
+          $('button#checkBtnEdit img').removeClass('invisible');
+          $('button#switchBtnEdit, button#checkBtnEdit').prop('disabled', true);
+          socket.emit('add-category', {categoryName: categoryName});
+        }
+
+        function removeBudget($this, isMain){
+          const hasSpent = JSON.parse($this.attr('data-for-spent'));
+          if(hasSpent){
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>You cannot delete a budget you\'ve already spent from</span>');
+              toast.show();
+            return;
+          }
+          const category = $this.attr('data-for-category');
+          const budgetAmount = parseInt($this.attr('data-for-amount'));
+          totalBudget -= budgetAmount;
+          delete budgetList[category];
+          $this.parent('div').remove();
+          const tb = new Intl.NumberFormat('en-US').format(totalBudget);
+          if(isMain){
+            $('input#amount').val(tb);
+            return;
+          }
+          $('input#amountEdit').val(tb);
+        }
+
+        socket.on('add-category', (emitData) => {
+          $('input#addCategory, input#addCategoryEdit').val('');
+          $('button#switchBtn, button#checkBtn, button#switchBtnEdit, button#checkBtnEdit').prop('disabled', false);
+          $('button#checkBtn i, button#checkBtnEdit i').removeClass('invisible');
+          $('button#checkBtn img, button#checkBtnEdit img').addClass('invisible');
+          if(!emitData.success){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>${emitData.message}</span>`);
+            toast.show();
+            return;
+          }
+          const option = `<option value="${emitData.categoryName}">${emitData.categoryName}</option>`;
+          const array = [emitData.categoryName];
+          $('select#selectCategory option[value!=""]').each(function(){
+            const v = $(this).attr('value');
+            array.push(v);
+          })
+          array.sort();
+          const index = array.indexOf(emitData.categoryName) - 1;
+          
+          const value = index < 0 ? '' : array[index];
+          $(`option[value="${value}"]`).after($(option));
+          const toast = new Toast(`<span class="text-success"><i class="bi bi-x-check-square-fill me-2"></i>Category successfully added</span>`);
+          toast.show();
+          if(!isActive)
+            toggleGroup();
+          if(!isActiveX)
+            toggleGroupX();
+        });
+
+        socket.on('delete-category', (emitData) => {
+          const categoryName = emitData.categoryName;
+          $(`option[value="${categoryName}"]`).remove();
+          const toast = new Toast(`<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category Deleted</span>`);
+          toast.show();
+        });
+
+        function toggleGroup(){
+          const btnHtml = isActive ? '<i class="bi bi-x"></i>' : '<i class="bi bi-plus"></i>';
+          const btnTitle = isActive ? 'Discard' : 'Add New Category';
+          const btnTitleX = isActive ? 'Add Category' : 'Add Budget';
+          $('button#switchBtn').html(btnHtml);
+          $('button#switchBtn').attr('title', btnTitle);
+          $('button#checkBtn').attr('title', btnTitleX);
+          $('select#selectCategory, input#addCategory, input#budgetAmount').toggleClass('d-none');
+          isActive = !isActive;
+        }
+        
+        function toggleGroupX(){
+          const btnHtml = isActiveX ? '<i class="bi bi-x"></i>' : '<i class="bi bi-plus"></i>';
+          const btnTitle = isActiveX ? 'Discard' : 'Add New Category';
+          const btnTitleX = isActiveX ? 'Add Category' : 'Add Budget';
+          $('button#switchBtnEdit').html(btnHtml);
+          $('button#switchBtnEdit').attr('title', btnTitle);
+          $('button#checkBtnEdit').attr('title', btnTitleX);
+          $('select#selectCategoryEdit, input#addCategoryEdit, input#budgetAmountEdit').toggleClass('d-none');
+          isActiveX = !isActiveX;
+        }
+
+        function createBudget($this) {
+          const mon = $('input#month').val();
+          const incomeVal = $('input#income').val();
+          const income = parseInt(incomeVal);
+          if(mon.length == 0){
+            $('div#errorLog').html('Please select a month').show();
+            return;
+          }
+          if(incomeVal == ''){
+            $('div#errorLog').html('Please specify your income').show();
+            return;
+          }
+          if($.isEmptyObject(budgetList)){
+            $('div#errorLog').html('Please add budget category').show();
+            return;
+          }
+          if(totalBudget > income){
+            $('div#errorLog').html('Your budget cannot be higher than your income').show();
+            return;
+          }
+          $('div#errorLog').html('').hide();
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          const data = {
+            month: mon,
+            budget: totalBudget,
+            categories: budgetList,
+            income: income
+          };
+          socket.emit('create-budget', data);
+        }
+
+        function saveBudgetEdit($this) {
+          const budgetId = $('input#budget-id').val();
+          const incomeVal = $('input#incomeEdit').val();
+          const income = parseInt(incomeVal);
+          if(incomeVal == ''){
+            $('div#errorLogEdit').html('Please specify your income').show();
+            return;
+          }
+          if($.isEmptyObject(budgetList)){
+            $('div#errorLogEdit').html('Please add budget category').show();
+            return;
+          }
+          if(totalBudget > income){
+            $('div#errorLogEdit').html('Your budget cannot be higher than your income').show();
+            return;
+          }
+          $('div#errorLogEdit').html('').hide();
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          const data = {
+            budgetId: budgetId,
+            budget: totalBudget,
+            categories: budgetList,
+            income: income
+          };
+          socket.emit('edit-budget', data);
+        }
+
+        socket.on('create-budget', (emitData) => {
+          $('button#create-budget').prop('disabled', false);
+          $('button#create-budget > span').removeClass('invisible');
+          $('button#create-budget > img').addClass('invisible');
+          if(!emitData.success){
+            $('div#errorLog').html(emitData.message).show();
+            return;
+          }
+          myModal.hide();
+          let spent = 0;
+          Object.values(emitData.categories).forEach(value => {
+            spent += value.spent;
+          });
+          const budgetId = emitData.budgetId;
+          const [year, mon] = emitData.month.split('-');
+          monIndex = parseInt(mon) - 1;
+          const month = months[monIndex];
+          const categoriesStr = JSON.stringify(emitData.categories);
+          const perc = Math.round((spent / emitData.amount) * 100);
+          const bgColor = perc < 30 ? 'alert-success' : perc < 70 ? 'alert-warning' : 'alert-danger';
+          const spentStr = new Intl.NumberFormat('en-US').format(spent);
+          const amount = new Intl.NumberFormat('en-US').format(emitData.amount);
+          let htmlData = `
+                  <div id="${budgetId}" data-for-budget-view class="shadow card d-flex flex-row my-5 position-relative">
+                    <div class="text-center text-white p-5 bg-info d-flex flex-column justify-content-center align-items-center" style="width: 120px;">
+                      <span class="fs-2">${year}</span>
+                      <span class="fs-5">${month}</span>
+                    </div>
+                    <div class="flex-grow-1 position-relative">
+                      <div class="position-absolute top-0 bottom-0 start-0 end-0 text-nowrap overflow-x-auto text-center pt-3">`;
+                        for (const key in emitData.categories) {
+                          const spnt = emitData.categories[key].spent;
+                          const bdgt = emitData.categories[key].budget;
+                          htmlData += `<div class="d-inline-block m-2 rounded-2 bg-light p-2" style="width: 120px;">
+                            <canvas data-for-pie="${key}" data-for-budget-id="${budgetId}" data-for-spent="${spnt}" data-for-budget="${bdgt}"></canvas>
+                          </div>`;
+                        }
+                      htmlData += `</div>
+                    </div>
+                    <div class="bg-light d-flex flex-column justify-content-evenly align-items-center" style="width: 50px;">
+                      <button class="btn btn-sm btn-secondary" data-for-edit
+                      data-budget-id="${budgetId}"
+                      data-for-month="${emitData.month}"
+                      data-for-income="${emitData.income}"
+                      onclick="editBudget($(this))"
+                      title="Edit Budget">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger" data-budget-id="${budgetId}" onclick="deleteBudget($(this))" title="Delete Budget">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                    <div class="alert ${bgColor} shadow-sm py-1 position-absolute top-0 start-50 translate-middle">
+                      Spent(₦${spentStr} of ₦${amount})
+                    </div>
+                  </div>`;
+          const containsData = $('div[data-for-budget-view]').length > 0;
+          if(!containsData){
+            const xData = `
+              <h2 class="text-center">Budgets</h2>
+              <div id="budgetDataView"></div>
+            `;
+            $('div#container').html(xData);
+          }
+          $htmlData = $(htmlData);
+          $htmlData.find('button[data-for-edit]').attr('data-for-category', categoriesStr);
+          $('div#budgetDataView').prepend($htmlData);
+
+          initChart($htmlData.find('canvas[data-for-pie]'));
+
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Budget Successfully Created</span>');
+          toast.show();
+        });
+
+        socket.on('edit-budget', (emitData) => {
+          $('button#edit-budget').prop('disabled', false);
+          $('button#edit-budget > span').removeClass('invisible');
+          $('button#edit-budget > img').addClass('invisible');
+          editModal.hide();
+          for (const key in canvasObject[emitData.budgetId]) {
+              const chart = canvasObject[emitData.budgetId][key];
+              chart.destroy();
+            if(!(key in emitData.categories)){
+              delete canvasObject[emitData.budgetId][key];
+              $(`canvas[data-for-budget-id="${emitData.budgetId}"][data-for-pie="${key}"]`).parent().remove();
+            }
+          }
+          let spent = 0;
+          for (const key in emitData.categories) {
+            const spnt = emitData.categories[key].spent;
+            const bdgt = emitData.categories[key].budget;
+            spent += spnt;
+            if(!(key in canvasObject[emitData.budgetId])){
+              const canvasHtml = `
+                          <div class="d-inline-block m-2 rounded-2 bg-light p-2" style="width: 120px;">
+                            <canvas data-for-pie="${key}" data-for-budget-id="${emitData.budgetId}" data-for-spent="${spnt}" data-for-budget="${bdgt}"></canvas>
+                          </div>
+              `;
+              $(`div#chartView-${emitData.budgetId}`).append($(canvasHtml));
+            } else {
+              $(`canvas[data-for-pie="${key}"][data-for-budget-id="${emitData.budgetId}"]`).attr({
+                'data-for-spent': spnt,
+                'data-for-budget': bdgt
+              });
+            }
+          }
+          initChart($(`div#chartView-${emitData.budgetId} canvas[data-for-pie]`));
+          const categoriesStr = JSON.stringify(emitData.categories);
+          const perc = Math.round((spent / emitData.budget) * 100);
+          const bgColor = perc < 30 ? 'alert-success' : perc < 70 ? 'alert-warning' : 'alert-danger';
+          const spentStr = new Intl.NumberFormat('en-US').format(spent);
+          const amount = new Intl.NumberFormat('en-US').format(emitData.budget);
+          $(`div#${emitData.budgetId} div.alert`).removeClass('alert-success alert-warning alert-danger');
+          $(`div#${emitData.budgetId} div.alert`).addClass(bgColor).html(`Spent(₦${spentStr} of ₦${amount})`);
+          $(`div#${emitData.budgetId} button[data-for-edit]`).attr('data-for-category', categoriesStr);
+          $(`div#${emitData.budgetId} button[data-for-edit]`).attr('data-for-income', emitData.income);
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Budget Successfully Updated</span>');
+          toast.show();
+        });
+
+        socket.on('update-budget', (emitData) => {
+          $('button#edit-budget').prop('disabled', false);
+          $('button#edit-budget > span').removeClass('invisible');
+          $('button#edit-budget > img').addClass('invisible');
+          editModal.hide();
+          let spent = 0;
+          for (const key in canvasObject[emitData.budgetId]) {
+              const chart = canvasObject[emitData.budgetId][key];
+              chart.destroy();
+          }
+          for (const key in emitData.categories) {
+            const spnt = emitData.categories[key].spent;
+            const bdgt = emitData.categories[key].budget;
+            spent += spnt;
+            $(`canvas[data-for-pie="${key}"][data-for-budget-id="${emitData.budgetId}"]`).attr({
+              'data-for-spent': spnt,
+              'data-for-budget': bdgt
+            });
+          }
+          initChart($(`div#chartView-${emitData.budgetId} canvas[data-for-pie]`));
+          const categoriesStr = JSON.stringify(emitData.categories);
+          const perc = Math.round((spent / emitData.budget) * 100);
+          const bgColor = perc < 30 ? 'alert-success' : perc < 70 ? 'alert-warning' : 'alert-danger';
+          const spentStr = new Intl.NumberFormat('en-US').format(spent);
+          const amount = new Intl.NumberFormat('en-US').format(emitData.budget);
+          $(`div#${emitData.budgetId} div.alert`).removeClass('alert-success alert-warning alert-danger');
+          $(`div#${emitData.budgetId} div.alert`).addClass(bgColor).html(`Spent(₦${spentStr} of ₦${amount})`);
+          $(`div#${emitData.budgetId} button[data-for-edit]`).attr('data-for-category', categoriesStr);
+          const toast = new Toast('<span class="text-info"><i class="bi bi-exclamation-octagon me-2"></i>An expense have been made on a budget</span>');
+          toast.show();
+        });
+
+        socket.on('delete-budget', (emitData) => {
+          $('button#deleteBudgetBtn').prop('disabled', false);
+          $('button#deleteBudgetBtn span').removeClass('invisible');
+          $('button#deleteBudgetBtn img').addClass('invisible');
+          exampleModal.hide();
+          if(!emitData.success){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>${emitData.message}</span>`);
+            toast.show();
+            return;
+          }
+          $('div#'+emitData.budgetId).remove();
+          const hasNoData = $('div[data-for-budget-view]').length == 0;
+          if(hasNoData){
+            const xData = `
+              <div class="text-center mt-5" id="no-data">
+                <img src="/images/no-data.png" width="300">
+                <h3>No Data Available</h3>
+              </div>
+            `;
+            $('div#container').html(xData);
+          }
+          const toast = new Toast('<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Budget Deleted</span>');
+          toast.show();
+        });
+
+        function formatToTwoDigits(number) {
+          // Convert the number to a string
+          const numString = String(number);
+          // Use padStart to add leading zeros if necessary
+          return numString.padStart(2, '0');
+        }
+
+        function editBudget($this){
+          editModal.show();
+          let tBudget = 0;
+          const budgetId = $this.attr('data-budget-id');
+          const budgetMonth = $this.attr('data-for-month');
+          const income = $this.attr('data-for-income');
+          budgetList = JSON.parse($this.attr('data-for-category'));
+
+          $('input#budget-id').val(budgetId);
+          $('input#monthEdit').val(budgetMonth);
+          $('input#incomeEdit').val(income);
+          Object.keys(budgetList).forEach((category) => {
+            const spent = budgetList[category].spent;
+            const budgetAmount = budgetList[category].budget;
+            const hasSpent = spent > 0;
+            const btnClass = hasSpent ? 'btn-secondary' : 'btn-danger';
+            totalBudget += budgetAmount;
+            const budgetHtml = `
+                <div class="input-group p-2 mb-1">
+                  <span class="form-control">${category}</span>
+                  <span class="input-group-text">₦${new Intl.NumberFormat('en-US').format(budgetAmount)}</span>
+                  <button onclick="removeBudget($(this), false)" data-for-spent="${hasSpent}" class="btn ${btnClass} fs-5" data-for-category="${category}" data-for-amount="${budgetAmount}" title="Remove Budget">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+            `;
+            $('div#budgetViewEdit').append($(budgetHtml));
+          });
+          const tb = new Intl.NumberFormat('en-US').format(totalBudget);
+          $('input#amountEdit').val(tb);
+        }
+
+        function deleteBudget($this){
+          budgetId = $this.attr('data-budget-id');
+          exampleModal.show();
+        }
+
+        function emitDelete($this){
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          socket.emit('delete-budget', {budgetId: budgetId}); 
+        }
+        
+        function initChart($canvas){
+          $canvas.each(function(){
+            const spent = parseInt($(this).attr('data-for-spent'));
+            const budget = parseInt($(this).attr('data-for-budget'));
+            const budgetId = $(this).attr('data-for-budget-id');
+            const category = $(this).attr('data-for-pie');
+            const balance = budget - spent;
+            const pieObject = canvasObject[budgetId] || new Object();
+
+            const chart = new Chart(this, {
+              type: 'doughnut',
+              data: {
+                datasets: [{
+                  data: [balance, spent],
+                  borderWidth: 0
+                }]
+              },
+              options: {
+                plugins: {
+                  title: {
+                    display: true,
+                    text: category,
+                    padding: 0
+                  }
+                }
+              }
+            });
+            pieObject[category] = chart;
+            canvasObject[budgetId] = pieObject;
+          });
+        }
+
+        function caclPercentage(amount, spent){
+          const perc = (spent / amount) * 100;
+          return Math.round(perc);
+        }
+      </script>
+</body>
+</html>

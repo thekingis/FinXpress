@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinXpress - Login</title>
+    <link rel="stylesheet" href="/bootstrap/icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+    <script src="/jquery/jquery.js"></script>
+    <script src="/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="shortcut icon" href="/images/icon.png" type="image/x-icon">
+    </head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light header-bg position-fixed top-0 start-0 end-0 z-index-x shadow">
+        <div class="container-fluid">
+          <a class="navbar-brand mx-auto position-relative" href="/">
+            <img src="/images/icon.png" width="30" height="24" class="d-inline-block align-text-top">
+            FinXpress
+          </a>
+        </div>
+      </nav>
+      <div class="position-relative mt-100 mb-5 mx-auto border border-2 border-light p-5 rounded-2 shadow bg-white box-size">
+        <h2 class="text-center mb-5">Login</h2>
+        <form action="/api/login" id="loginForm">          
+          <div class="mb-3">
+            <label for="email" class="form-label">Email address</label>
+            <input type="email" class="form-control" id="email" name="email" required />
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <div class="position-relative">
+              <input type="password" class="form-control" id="password" name="password" required />
+              <span id="showHidePassword" title="Show Password" class="cursor-pointer position-absolute end-0 top-50 translate-middle-y me-2">
+                <i class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="rounded-2 bg-danger text-white p-2 my-3" id="errorLog"></div>
+            <button type="submit" class="btn btn-primary position-relative">
+              <span>LOGIN</span>
+              <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+            </button>
+          </div>
+          <div class="mt-5 text-center">
+            Don't have an account?
+            <a href="/signup">Sign Up</a>
+          </div>
+        </form>
+        <form action="/auth/user" method="post" id="authForm"></form>
+      </div>
+      <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content text-center p-3">
+            <h4 class="mb-4">Two-Step Factor Authentication</h4>
+            <span class="text-secondary">Input one of your 2FA Codes</span>
+            <div class="mt-4 d-flex justify-content-center flex-row">
+              <input type="text" data-for-code class="form-control border-3 fw-bold fs-3 text-center mx-2" style="width: 55px;" />
+              <input type="text" data-for-code class="form-control border-3 fw-bold fs-3 text-center mx-2" style="width: 55px;" />
+              <input type="text" data-for-code class="form-control border-3 fw-bold fs-3 text-center mx-2" style="width: 55px;" />
+              <input type="text" data-for-code class="form-control border-3 fw-bold fs-3 text-center mx-2" style="width: 55px;" />
+              <input type="text" data-for-code class="form-control border-3 fw-bold fs-3 text-center mx-2" style="width: 55px;" />
+              <input type="text" data-for-code class="form-control border-3 fw-bold fs-3 text-center mx-2" style="width: 55px;" />
+            </div>
+            <input type="hidden" id="userId">
+            <button id="2fa-btn" class="btn btn-success position-relative mx-5 mt-4" onclick="verify2FA($(this))" disabled>
+              <span>Verify</span>
+              <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+            </button>
+          </div>
+        </div>
+      </div>
+      <script src="/jquery/toast.js"></script>
+      <script>
+
+        let isHidden = true;
+        let pauseFocus = false;
+        let isRequesting = false;
+        var myModalEl = document.getElementById('staticBackdrop');
+        var myModal = new bootstrap.Modal(myModalEl, {});
+
+        $('div#errorLog').html('').hide();
+
+        $('input[data-for-code]').keyup(function(evt){
+          const isComplete = $('input[data-for-code]').filter(function(){
+            return this.value == '';
+          }).length == 0;
+          $('button#2fa-btn').prop('disabled', !isComplete);
+          if(evt.keyCode == 8){
+            $('input[data-for-code]').val('');
+            $('input[data-for-code]').first().focus();
+            $('button#2fa-btn').prop('disabled', true);
+            return;
+          }
+          $(this).next().focus();
+        });
+
+        $('input[data-for-code]').focus(function(){
+          if(!pauseFocus){
+            pauseFocus = true;
+            $('input[data-for-code]').filter(function(){
+              return this.value == '';
+            }).first().focus();
+            pauseFocus = false;
+          }
+        });
+
+        $('input[data-for-code]').on('paste', (evt) => {
+          evt.preventDefault();
+          const pasteText = evt.originalEvent.clipboardData.getData('text');
+          if(pasteText.length == $('input[data-for-code]').length){
+            $('input[data-for-code]').val('').blur();
+            for (let i = 0; i < pasteText.length; i++) {
+              const char = pasteText[i];
+              $('input[data-for-code]').eq(i).val(char);
+            }
+            $('button#2fa-btn').prop('disabled', false);
+          }
+        });
+
+        $('input[data-for-code]').keydown(function(evt){
+          const value = this.value;
+          if(value.length > 0)
+            evt.preventDefault();
+        });
+
+        $('span#showHidePassword').click(function(){
+          let iconClass = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+          let type = isHidden ? 'text' : 'password';
+          let title = isHidden ? 'Hide Password' : 'Show Password';
+          $(this).attr('title', title);
+          $(this).find('i').attr('class', iconClass);
+          $('input#password').attr('type', type);
+          isHidden = !isHidden;
+        });
+
+        $('form#loginForm').submit(function(evt){
+          evt.preventDefault();
+          $('div#errorLog').html('').hide();
+          if(!isRequesting){
+            const $this = $(this);
+            const apiUrl = $(this).attr('action');
+            const dataObj = $(this).serialize();
+            isRequesting = true;
+            $this.find('button').prop('disabled', true);
+            $this.find('button > span').addClass('invisible');
+            $this.find('button > img').removeClass('invisible');
+            $.ajax({
+              type: 'post',
+              url: apiUrl,
+              data: dataObj,
+              dataType: 'json',
+              error: (err) => {
+                isRequesting = false;
+                $this.find('button').prop('disabled', false);
+                $this.find('button > span').removeClass('invisible');
+                $this.find('button > img').addClass('invisible');
+                $('div#errorLog').html('<i class="bi bi-exclamation-octagon me-2"></i>An error occured').show();
+              },
+              success: (dataResObj) => {
+                if(!dataResObj.success){
+                  isRequesting = false;
+                  $this.find('button').prop('disabled', false);
+                  $this.find('button > span').removeClass('invisible');
+                  $this.find('button > img').addClass('invisible');
+                  $('div#errorLog').html(`<i class="bi bi-exclamation-octagon me-2"></i>${dataResObj.message}`).show();
+                  return;
+                }
+                if(!dataResObj.allow2FA){
+                  $('form#authForm').submit();
+                  return;
+                }
+                isRequesting = false;
+                $('input#userId').val(dataResObj.userId);
+                $this.find('button').prop('disabled', false);
+                $this.find('button > span').removeClass('invisible');
+                $this.find('button > img').addClass('invisible');
+                myModal.show();
+              }
+            });
+          }
+        });
+
+        function verify2FA($this) {
+          let code = '';
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          const userId = $('input#userId').val();
+          $('input[data-for-code]').each(function(){
+            code += this.value;
+          });
+          const dataObj = {code, userId};
+          const apiUrl = '/auth/verify2FA';
+          $.ajax({
+            type: 'post',
+            url: apiUrl,
+            data: dataObj,
+            dataType: 'json',
+            error: (err) => {
+              $this.prop('disabled', true);
+              $this.find('span').removeClass('invisible');
+              $this.find('img').addClass('invisible');
+              myModal.hide();
+              $('input[data-for-code]').val('');
+              const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>An error occured. Please try again</span>');
+              toast.show();
+            },
+            success: (dataResObj) => {
+              if(!dataResObj.success){
+                $this.prop('disabled', true);
+                $this.find('span').removeClass('invisible');
+                $this.find('img').addClass('invisible');
+                myModal.hide();
+                $('input[data-for-code]').val('');
+                const toast = new Toast(`<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>${dataResObj.message}</span>`);
+                toast.show();
+                return;
+              }
+              $('form#authForm').submit();
+            }
+          });
+        }
+
+      </script>
+</body>
+</html>

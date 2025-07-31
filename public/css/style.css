@@ -1,0 +1,84 @@
+body {
+    margin: 0;
+    background: url('/images/background-image.jpg');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% auto;
+    background-attachment: fixed;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+a {
+    cursor: pointer;
+}
+
+.header-bg {
+    background-color: #e3f2fd;
+}
+
+.box-size {
+    width: 400px;
+}
+
+.mt-100 {
+    margin-top: 100px;
+}
+
+.v-middle {
+    vertical-align: middle;
+}
+
+.no-underline {
+    text-decoration: none;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.z-index-x {
+    z-index: 999;
+}
+
+.height-max-300 {
+    max-height: 300px;
+}
+
+.active {
+    color: red !important;
+}
+
+.scrollbar {
+	overflow-y:auto;
+	overflow-x:hidden;
+}
+
+.scrollbar::-webkit-scrollbar {
+    width: 8px;
+	background:#f7f7f7;
+	cursor:default;
+    border-radius: 4px;
+    cursor: default;
+}
+   
+.scrollbar::-webkit-scrollbar-track {
+    cursor: default;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+   
+.scrollbar::-webkit-scrollbar-thumb {
+    background-color: slategrey;
+    cursor: default;
+    border-radius: 4px;
+}

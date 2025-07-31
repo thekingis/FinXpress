@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinXpress - Settings</title>
+    <link rel="stylesheet" href="/bootstrap/icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+    <script src="/jquery/jquery.js"></script>
+    <script src="/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="shortcut icon" href="/images/icon.png" type="image/x-icon">
+    </head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light header-bg position-fixed top-0 start-0 end-0 z-index-x shadow">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/dashboard">
+            <img src="/images/icon.png" width="30" height="24" class="d-inline-block align-text-top">
+            FinXpress
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="/dashboard">Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/budgets">Budget Manager</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/expenses">Expense Tracker</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/reports-analytics">Reports & Analytics</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/finance-goal">Financial Goal</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link active" href="/settings">Settings</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a>
+              </li>
+            </ul>
+            <div class="ms-lg-auto d-sm-none d-lg-inline-block dropdown">
+              <a class="nav-link dropdown-toggle" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="/images/userlogo.png" width="25" class="me-2">
+                <span>Hi <%= userData.name.split(' ')[0] %></span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDarkDropdownMenuLink">
+                <li><a class="dropdown-item" href="/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                <li><a class="dropdown-item" href="/settings/manage-categories"><i class="bi bi-database-gear me-2"></i>Manage Categories</a></li>
+                <li><a class="dropdown-item" href="/settings/security"><i class="bi bi-key-fill me-2"></i>Change Password</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div class="position-relative mt-100 mb-5 mx-2 mb-4 border border-2 border-light p-5 rounded-2 shadow bg-white">
+        <%
+        const tabObject = {
+          'general': 'General Setting',
+          'manage-categories': 'Manage Categories',
+          'notifications': 'Notifications Setting',
+          'security': 'Security Setting'
+        };
+        %>
+        <div class="d-flex p-3">
+          <div class="p-3 border border-1 border-start-0 border-top-0 border-bottom-0 border-secondary" style="width: 350px;">
+            <ul class="p-3" style="list-style: none;">
+              <%
+              const showG = tab == 'general' ? '' : 'd-none';
+              const showS = tab == 'security' ? '' : 'd-none';
+              const showN = tab == 'notifications' ? '' : 'd-none';
+              const showC = tab == 'manage-categories' ? '' : 'd-none';
+              const bChecked = settingsData.allowBudgetAlert ? 'checked' : '';
+              const sChecked = settingsData.allowGoalAlert ? 'checked' : '';
+              const faChecked = settingsData.allow2FA ? 'checked' : '';
+              for(const t in tabObject){
+                const c = t == tab ? 'btn-secondary' : 'btn-outline-secondary';
+                const inv = t == tab ? '' : 'invisible';
+                %>
+                <li class="position-relative">
+                  <a data-tab="<%= t %>" class="btn <%= c %> cursor-pointer d-block my-3 rounded-0"><%= tabObject[t] %></a>
+                  <i class="bi bi-caret-right-fill <%= inv %> position-absolute top-50 translate-middle-y start-100 fs-2 text-secondary"></i>
+                </li>
+                <%
+              }
+              %>
+            </ul>
+          </div>
+          <div class="flex-grow-1 p-3">
+            <h3 class="text-center mb-4" id="tab"><%= tabObject[tab] %></h3>
+            <div data-for-tab="general" class="card mx-auto p-4 rounded-2 shadow-sm <%= showG %>" style="max-width: 400px;">
+              <h6 class="text-center mb-4">Edit Personal Data</h6>
+              <div class="mb-3">
+                <label for="fullname" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="fullname" value="<%= userData.name %>" />
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" value="<%= userData.email %>" />
+              </div>
+              <div class="mb-3">
+                <label for="aPassword" class="form-label">Your Password</label>
+                <div class="position-relative">
+                  <input type="password" class="form-control" id="aPassword" value="" />
+                  <span showHidePassword dataFor="aPassword" isHidden="true" title="Show Password" class="cursor-pointer position-absolute end-0 top-50 translate-middle-y me-2">
+                    <i class="bi bi-eye"></i>
+                  </span>
+                </div>
+              </div>
+              <button id="saveDataBtn" onclick="updatePersonalData($(this))" class="btn btn-success position-relative mt-2">
+                <span>Save</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+            <div data-for-tab="manage-categories" class="card mx-auto p-4 rounded-2 shadow-sm <%= showC %>" style="max-width: 400px;">
+              <div class="mb-3" id="add-view">
+                <label for="categoryName" class="form-label">Add Category</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="categoryName" placeholder="Category Name" />
+                  <button id="addBtn" onclick="addCategory($(this))" class="btn btn-success btn-sm input-group-text position-relative">
+                    <span>ADD</span>
+                    <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+                  </button>
+                </div>
+              </div>
+              <%
+              categoryData.categoryList.sort();
+              for(const categoryName of categoryData.categoryList){
+                %>
+                <div data-for-c-name="<%= categoryName %>" class="card p-2 d-flex my-2 rounded-1 flex-row align-items-center">
+                  <nav class="flex-grow-1"><%= categoryName %></nav>
+                  <button class="btn btn-sm btn-danger" data-category-name="<%= categoryName %>" onclick="deleteCategoryName($(this))" title="Delete Category">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </div>
+                <%
+              }
+              %>
+            </div>
+            <div data-for-tab="notifications" class="card mx-auto p-4 rounded-2 shadow-sm <%= showN %>" style="max-width: 400px;">
+              <div class="form-check form-switch mb-5">
+                <input data-for-check="allowBudgetAlert" class="form-check-input" type="checkbox" role="switch" id="budgetSwitch"  <%= bChecked %>>
+                <label class="form-check-label" for="budgetSwitch">Show Budget Notifications</label>
+              </div>
+              <div class="form-check form-switch">
+                <input data-for-check="allowGoalAlert" class="form-check-input" type="checkbox" role="switch" id="schemeSwitch"  <%= sChecked %>>
+                <label class="form-check-label" for="schemeSwitch">Show Saving Scheme Notifications</label>
+              </div>
+            </div>
+            <div data-for-tab="security" class="<%= showS %>">
+              <div class="card mx-auto p-4 rounded-2 shadow-sm mb-5" style="max-width: 400px;">
+                <div class="form-check form-switch my-3">
+                  <input data-for-check="allow2FA" class="form-check-input" type="checkbox" role="switch" id="budgetSwitch"  <%= faChecked %>>
+                  <label class="form-check-label" for="budgetSwitch">Enable Two-Step Factor Authentication</label>
+                </div>
+                <div id="code-view">
+                  <%
+                  if(settingsData.allow2FA){
+                    %>
+                    <span class="text-danger mt-3">You will require any of this codes whenever you login. Copy and save them to a file</span>
+                    <div class="position-relative card rounded-1 shadow-sm bg-light p-3 mt-3 d-flex flex-row justify-content-evenly">
+                      <ul class="p-0 mt-2" style="list-style: none;">
+                        <%
+                        let c = 0;
+                        const codesStr = JSON.stringify(codes);
+                        for(const code of codes){
+                          if(c == 5){
+                            %>
+                            </ul>
+                            <ul class="p-0 mt-2" style="list-style: none;">
+                            <%
+                          }
+                          %>
+                          <li class="text-secondary"><%= code %></li>
+                          <%
+                          c++;
+                        }
+                        %>
+                      </ul>
+                      <span title="Copy" onclick="copyToClipboard($(this))" data-for-copy="<%= codesStr %>" class="p-2 cursor-pointer position-absolute top-0 end-0 me-1">
+                        <i class="bi bi-copy"></i>
+                      </span>
+                    </div>
+                    <%
+                  }
+                  %>
+                </div>
+              </div>
+              <div class="card mx-auto p-4 rounded-2 shadow-sm" style="max-width: 400px;">
+                <h6 class="text-center mb-4">Change Password</h6>
+                <div class="mb-3">
+                  <label for="bPassword" class="form-label">Old Password</label>
+                  <div class="position-relative">
+                    <input type="password" class="form-control" id="bPassword" value="" />
+                    <span showHidePassword dataFor="bPassword" isHidden="true" title="Show Password" class="cursor-pointer position-absolute end-0 top-50 translate-middle-y me-2">
+                      <i class="bi bi-eye"></i>
+                    </span>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="cPassword" class="form-label">New Password</label>
+                  <div class="position-relative">
+                    <input type="password" class="form-control" id="cPassword" value="" />
+                    <span showHidePassword dataFor="cPassword" isHidden="true" title="Show Password" class="cursor-pointer position-absolute end-0 top-50 translate-middle-y me-2">
+                      <i class="bi bi-eye"></i>
+                    </span>
+                  </div>
+                </div>
+                <button id="savePasswordBtn" onclick="updatePassword($(this))" class="btn btn-success position-relative mt-2">
+                  <span>Save</span>
+                  <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="exampleModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Delete Category</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              Deleting this category is irreversible. Do you want to delete it?
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" id="deleteBtn" class="btn btn-sm btn-danger position-relative" onclick="emitDelete($(this))">
+                <span>Delete</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script src="http://localhost:8000/socket.io/socket.io.js"></script>
+      <script src="/jquery/toast.js"></script>
+      <script>
+        
+        let categoryName = null;
+        const socket = io();
+        const tabObject = {
+          'general': 'General Setting',
+          'manage-categories': 'Manage Categories',
+          'security': 'Security Setting',
+          'notifications': 'Notifications Setting'
+        };
+        const validateEmail = (email) => {
+          return email.match(
+            /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+          );
+        };
+        var exampleModal = new bootstrap.Modal(document.getElementById('exampleModal'), {});
+
+        function emitDelete($this){
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          socket.emit('delete-category', {categoryName: categoryName}); 
+        }
+        
+        socket.on('delete-category', (emitData) => {
+          const categoryName = emitData.categoryName;
+          exampleModal.hide();
+          $('button#deleteBtn').prop('disabled', false);
+          $('button#deleteBtn span').removeClass('invisible');
+          $('button#deleteBtn img').addClass('invisible');
+          $(`div[data-for-c-name="${categoryName}"]`).remove();
+          const toast = new Toast(`<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category Deleted</span>`);
+          toast.show();
+        });
+
+        function deleteCategoryName($this){
+          categoryName = $this.attr('data-category-name');
+          exampleModal.show();
+        }
+
+        function addCategory($this){
+          const categoryName = $('input#categoryName').val().trim();
+          if(categoryName.length == 0){
+            const toast = new Toast('<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>Category name connot be empty</span>');
+            toast.show();
+            return;
+          }
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          $this.prop('disabled', true);
+          socket.emit('add-category', {categoryName: categoryName});
+        }
+
+        socket.on('add-category', (emitData) => {
+          $('input#categoryName').val('');
+          $('button#addBtn').prop('disabled', false);
+          $('button#addBtn span').removeClass('invisible');
+          $('button#addBtn img').addClass('invisible');
+          if(!emitData.success){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>${emitData.message}</span>`);
+            toast.show();
+            return;
+          }
+          const htmlData = `
+                <div data-for-c-name="${emitData.categoryName}" class="card p-2 d-flex my-2 rounded-1 flex-row align-items-center">
+                  <nav class="flex-grow-1">${emitData.categoryName}</nav>
+                  <button class="btn btn-sm btn-danger" data-category-name="${emitData.categoryName}" onclick="deleteCategoryName($(this))" title="Delete Category">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </div>`;
+          const array = [emitData.categoryName];
+          $('div[data-for-c-name]').each(function(){
+            const cn = $(this).attr('data-for-c-name');
+            array.push(cn);
+          })
+          array.sort();
+          const index = array.indexOf(emitData.categoryName) - 1;
+
+          if(index < 0){
+            $(`div#add-view`).after($(htmlData));
+          } else {
+            const categoryName = array[index];
+            $(`div[data-for-c-name="${categoryName}"]`).after($(htmlData));
+          }
+          const toast = new Toast(`<span class="text-success"><i class="bi bi-x-check-square-fill me-2"></i>Category successfully added</span>`);
+          toast.show();
+        });
+
+        $('input[data-for-check]').change(function(){
+          const emitData = new Object();
+          const isChecked = $(this).is(':checked');
+          const dataKey = $(this).attr('data-for-check');
+
+          emitData[dataKey] = isChecked;
+          socket.emit('switch-option', emitData);
+        });
+
+        function copyToClipboard($this){
+          const codes = JSON.parse($this.attr('data-for-copy'));
+          $input = $('<input type="text">');
+          $input.val(codes.join(', '));
+          $('body').append($input);
+          $input.select();
+          document.execCommand('copy');
+          $input.remove();
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Copied to Clipboard</span>');
+          toast.show();
+        }
+
+        function updatePersonalData($this){
+          const email = $('input#email').val().trim();
+          const fullname = $('input#fullname').val().trim();
+          const password = $('input#aPassword').val();
+          if(fullname == ''){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Please include your full name</span>`);
+            toast.show();
+            return;
+          }
+          if(email == ''){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Please include your email address</span>`);
+            toast.show();
+            return;
+          }
+          if(password == ''){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Please include your password</span>`);
+            toast.show();
+            return;
+          }
+          if(!validateEmail(email)){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Your email address is invalid</span>`);
+            toast.show();
+            return;
+          }
+
+          const emitData = {
+            email: email.toLowerCase(),
+            name: fullname,
+            password: password
+          };
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          socket.emit('update-data', emitData);
+        }
+        
+        function updatePassword($this){
+          const oldPassword = $('input#bPassword').val();
+          const newPassword = $('input#cPassword').val();
+          if(oldPassword == ''){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Please include your password</span>`);
+            toast.show();
+            return;
+          }
+          if(newPassword == ''){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Please specify a new password</span>`);
+            toast.show();
+            return;
+          }
+
+          const emitData = {
+            oldPassword: oldPassword,
+            newPassword: newPassword
+          };
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          socket.emit('update-password', emitData);
+        }
+        
+        socket.on('update-data', emitData => {
+          $('button#saveDataBtn').prop('disabled', false);
+          $('button#saveDataBtn span').removeClass('invisible');
+          $('button#saveDataBtn img').addClass('invisible');
+          if(!emitData.success){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>${emitData.message}</span>`);
+            toast.show();
+            return;
+          }
+          $('input#email').val(emitData.email);
+          $('input#fullname').val(emitData.name);
+          $('input#aPassword').val('');
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Data Successfully Updated</span>');
+          toast.show();
+        });
+
+        socket.on('switch-option', emitData => {
+          if('allow2FA' in emitData && 'codes' in emitData){
+            let codeHtml = `
+                    <span class="text-danger mt-3">You will require any of this codes whenever you login. Copy and save them to a file</span>
+                    <div class="position-relative card rounded-1 shadow-sm bg-light p-3 mt-3 d-flex flex-row justify-content-evenly">
+                      <ul class="p-0 mt-2" style="list-style: none;">`;
+                        let c = 0;
+                        const codesStr = JSON.stringify(emitData.codes);
+                        for(const code of emitData.codes){
+                          if(c == 5){
+                            codeHtml += `</ul>
+                            <ul class="p-0 mt-2" style="list-style: none;">`;
+                          }
+                          codeHtml += `<li class="text-secondary">${code}</li>`;
+                          c++;
+                        }
+                      codeHtml += `</ul>
+                      <span title="Copy" onclick="copyToClipboard($(this))" data-for-copy class="p-2 cursor-pointer position-absolute top-0 end-0 me-1">
+                        <i class="bi bi-copy"></i>
+                      </span>
+                    </div>
+            `;
+            $('div#code-view').html(codeHtml);
+            $('span[data-for-copy]').attr('data-for-copy', codesStr);
+          } else
+            $('div#code-view').html('');
+          
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Option Updated</span>');
+          toast.show();
+        });
+
+        socket.on('update-password', emitData => {
+          $('button#savePasswordBtn').prop('disabled', false);
+          $('button#savePasswordBtn span').removeClass('invisible');
+          $('button#savePasswordBtn img').addClass('invisible');
+          if(!emitData.success){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>${emitData.message}</span>`);
+            toast.show();
+            return;
+          }
+          $('input#bPassword').val('');
+          $('input#cPassword').val('');
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Password Successfully Updated</span>');
+          toast.show();
+        });
+
+        $('a[data-tab]').click(function(){
+          $('a[data-tab]').removeClass('btn-secondary').addClass('btn-outline-secondary');
+          $('a[data-tab]').parent().find('i').addClass('invisible');
+
+          const tabKey = $(this).attr('data-tab');
+          $('h3#tab').html(tabObject[tabKey]);
+          $(this).addClass('btn-secondary').removeClass('btn-outline-secondary');
+          $(this).parent().find('i').removeClass('invisible');
+          $('div[data-for-tab]').addClass('d-none');
+          $(`div[data-for-tab="${tabKey}"]`).removeClass('d-none');
+          const url = tabKey == 'general' ? '' : `/${tabKey}`;
+          window.history.replaceState(null, null, `/settings${url}`);
+        });
+
+        $('span[showHidePassword]').click(function(){
+          let dataFor = $(this).attr('dataFor');
+          let isHidden = JSON.parse($(this).attr('isHidden'));
+          let iconClass = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+          let type = isHidden ? 'text' : 'password';
+          let title = isHidden ? 'Hide Password' : 'Show Password';
+          $(this).attr('title', title);
+          $(this).find('i').attr('class', iconClass);
+          $(`input#${dataFor}`).attr('type', type);
+          isHidden = !isHidden;
+          $(this).attr('isHidden', isHidden);
+        });
+
+      </script>
+</body>
+</html>

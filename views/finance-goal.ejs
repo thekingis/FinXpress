@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinXpress - Financial Goal</title>
+    <link rel="stylesheet" href="/bootstrap/icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+    <script src="/jquery/jquery.js"></script>
+    <script src="/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="shortcut icon" href="/images/icon.png" type="image/x-icon">
+    </head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light header-bg position-fixed top-0 start-0 end-0 z-index-x shadow">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/dashboard">
+            <img src="/images/icon.png" width="30" height="24" class="d-inline-block align-text-top">
+            FinXpress
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="/dashboard">Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/budgets">Budget Manager</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/expenses">Expense Tracker</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/reports-analytics">Reports & Analytics</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active" href="/finance-goal">Financial Goal</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link" href="/settings">Settings</a>
+              </li>
+              <li class="nav-item d-lg-none">
+                <a class="nav-link text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a>
+              </li>
+            </ul>
+            <div class="ms-lg-auto d-sm-none d-lg-inline-block dropdown">
+              <a class="nav-link dropdown-toggle" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="/images/userlogo.png" width="25" class="me-2">
+                <span>Hi <%= userData.name.split(' ')[0] %></span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDarkDropdownMenuLink">
+                <li><a class="dropdown-item" href="/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                <li><a class="dropdown-item" href="/settings/manage-categories"><i class="bi bi-database-gear me-2"></i>Manage Categories</a></li>
+                <li><a class="dropdown-item" href="/settings/security"><i class="bi bi-key-fill me-2"></i>Change Password</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-power me-2"></i>Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div class="position-relative mt-100 mb-5 mx-2 mb-4 border border-2 border-light p-5 rounded-2 shadow bg-white">
+        <div class="mb-4 position-relative d-flex">
+          <a class="btn btn-success shadow rounded-1 mx-sm-auto ms-md-auto me-md-0" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+            <i class="bi bi-currency-exchange me-3"></i>
+            <span>Create Saving Scheme</span>
+          </a>
+        </div>
+        <div id="container">
+          <% if(schemeData.length == 0){ %>
+            <div class="text-center mt-5" id="no-data">
+              <img src="/images/no-data.png" width="300">
+              <h3>No Data Available</h3>
+            </div>
+          <% } else {
+            %>
+            <h2 class="text-center" id="textHeader">Saving Scheme</h2>
+            <%
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            for(const scheme of schemeData){
+              const schemeId = scheme._id.toString();
+              const [sYear, sMon] = scheme.startDate.split('-');
+              const sMonIndex = parseInt(sMon) - 1;
+              const sMonth = months[sMonIndex];
+              const [eYear, eMon] = scheme.endDate.split('-');
+              const eMonIndex = parseInt(eMon) - 1;
+              const eMonth = months[eMonIndex];
+              const schemeStartDate = new Date(scheme.startDate);
+              const schemeEndDate = new Date(scheme.endDate);
+              const today = new Date() > schemeEndDate ? schemeEndDate : new Date();
+              const em = schemeEndDate.getMonth() + 1;
+              schemeEndDate.setMonth(em);
+              schemeEndDate.setDate(0);
+              const tm = today.getMonth() + 1;
+              today.setMonth(tm);
+              today.setDate(0);
+              let schemeIsActive = false;
+              const diffInMs = schemeEndDate - schemeStartDate;
+              const diffInDays = Math.trunc(diffInMs / 86400000) + 1;
+              const diffInMsX = today - schemeStartDate;
+              const diffInDaysX = Math.trunc(diffInMsX / 86400000) + 1;
+              const monthsBetween = new Array();              
+              let currentDate = schemeStartDate;
+              let saved = 0;
+              let spent = 0;
+              let progress = 0;
+              let totalIncome = 0;
+              
+              while(currentDate <= schemeEndDate){
+                const newDate = new Date(currentDate);
+                const y = newDate.getFullYear();
+                const m = String(newDate.getMonth() + 1).padStart(2, '0');;
+                monthsBetween.push(`${y}-${m}`);
+                currentDate.setMonth(currentDate.getMonth() + 1);
+              }
+
+              for(const month of monthsBetween) {
+                if(month in budgetData){
+                  schemeIsActive = true;
+                  const budget = budgetData[month];
+                  totalIncome += budget.income;
+                  for(const key in budget.categories){
+                    spent += budget.categories[key].spent;
+                  }
+                  saved += budget.income - spent;
+                }
+              }
+
+              if(saved >= scheme.minAmount) {
+                progress = 100;
+              } else {
+                const sp = (saved / scheme.minAmount) * 100;
+                const dp = (diffInDaysX / diffInDays) * 100;
+                progress = (sp / dp) * 100;
+                progress = progress < 100 ? Math.round(progress) : 100;
+              }
+              progress = `${progress}%`;
+              %>
+              <div id="<%= schemeId %>" data-for-scheme-view class="shadow card d-flex flex-row my-5 position-relative">
+                <div class="text-center text-white p-5 bg-info d-flex flex-column justify-content-center align-items-center" style="width: 120px;">
+                  <span class="fs-6">From:</span>
+                  <span class="fs-2"><%= sYear %></span>
+                  <span class="fs-5"><%= sMonth %></span>
+                </div>
+                <div class="flex-grow-1 position-relative">
+                  <div id="schemeView-<%= schemeId %>" class="position-absolute top-0 bottom-0 start-0 end-0 text-nowrap overflow-x-auto text-center pt-3">
+                    <%
+                    if(schemeIsActive){
+                      totalIncome = '₦'+new Intl.NumberFormat('en-US').format(totalIncome);
+                      const minAmount = '₦'+new Intl.NumberFormat('en-US').format(scheme.minAmount);
+                      saved = '₦'+new Intl.NumberFormat('en-US').format(saved);
+                      const dataArray = [
+                      {icon: 'bi-cash-stack', title: 'Total Income', value: totalIncome},
+                      {icon: 'bi-bar-chart', title: 'Goal Target', value: minAmount},
+                      {icon: 'bi-piggy-bank', title: 'Currently Saved', value: saved},
+                      {icon: 'bi-graph-up-arrow', title: 'Goal Progress', value: progress}
+                      ];
+                      %>
+                      <div class="row mt-3 mx-1">
+                      <%
+                      for(const data of dataArray){
+                        %>
+                        <div class="col-12 col-md-6 col-lg-3">
+                          <div class="row shadow px-2 py-3 my-2 bg-light rounded" style="margin: auto 0px;">
+                            <div class="col-8 height-100 d-flex align-items-center justify-content-center">
+                              <div class="w-100 text-start">
+                                <nav class="fs-4 text-info"><%= data.value %></nav>
+                                <nav class="fs-13 fw-bold text-slategrey"><%= data.title %></nav>
+                              </div>
+                            </div>
+                            <div class="col-4 height-100 d-flex align-items-center justify-content-center">
+                              <div class="w-100 text-end text-info" style="font-size: 35px;"><i class="bi <%= data.icon %>"></i></div>
+                            </div>
+                          </div>
+                        </div>
+                        <%
+                      }
+                      %>
+                      </div>
+                      <%
+                    } else {
+                      %>
+                      <h5 class="text-center mt-5 mb-3">
+                        You don't have any budget within the time frame of this Scheme
+                      </h5>
+                      <nav class="text-center">
+                        <a class="link-primary link-underline cursor-pointer"
+                          data-for-scheme-id="<%= schemeId %>"
+                          data-for-scheme-end-date="<%= scheme.endDate %>"
+                          data-for-scheme-start-date="<%= scheme.startDate %>"
+                          data-for-scheme-min-amount="<%= scheme.minAmount %>"
+                          onclick="editScheme($(this))">Edit</a>
+                        <span> this scheme or </span>
+                        <a href="/budgets" class="link-primary link-underline">Create a New Budget</a>
+                        <span> to match the time frame</span>
+                      </nav>
+                      <%
+                    }
+                    %>
+                  </div>
+                </div>
+                <div class="text-center text-white p-5 bg-info d-flex flex-column justify-content-center align-items-center" style="width: 120px;">
+                  <span class="fs-6">To:</span>
+                  <span class="fs-2"><%= eYear %></span>
+                  <span class="fs-5"><%= eMonth %></span>
+                </div>
+                <div class="position-absolute d-flex top-0 start-50 translate-middle justify-content-evenly">
+                  <button id="edit-btn-<%= schemeId %>" class="btn btn-sm btn-success mx-2" data-for-edit
+                  data-for-scheme-id="<%= schemeId %>"
+                  data-for-scheme-end-date="<%= scheme.endDate %>"
+                  data-for-scheme-start-date="<%= scheme.startDate %>"
+                  data-for-scheme-min-amount="<%= scheme.minAmount %>"
+                  onclick="editScheme($(this))"
+                  title="Edit Scheme">
+                    <i class="bi bi-pencil-square me-1"></i>Edit
+                  </button>
+                  <button class="btn btn-sm btn-danger mx-2" data-scheme-id="<%= schemeId %>" onclick="deleteScheme($(this))" title="Delete Scheme">
+                    <i class="bi bi-trash3 me-1"></i>Delete
+                  </button>
+                </div>
+              </div>
+              <%
+            }
+          } %>
+        </div>
+      </div>
+      <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="staticBackdropLabel">Create Saving Scheme</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="startMonth" class="form-label">From</label>
+                <input type="month" class="form-control" id="startMonth" />
+              </div>
+              <div class="mb-3">
+                <label for="endMonth" class="form-label">To</label>
+                <input type="month" class="form-control" id="endMonth" />
+              </div>
+              <div class="mb-3">
+                <label for="amount" class="form-label">Amount</label>
+                <div class="input-group">
+                  <span class="input-group-text">₦</span>
+                  <input type="text" class="form-control" id="amount" />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="rounded-2 bg-danger text-white py-1 px-2 my-3 me-auto" id="errorLog"></div>
+              <button type="button" class="btn btn-secondary btn-sm rounded-1" data-bs-dismiss="modal">Cancel</button>
+              <button id="create-scheme" type="button" class="btn btn-success btn-sm rounded-1 position-relative" onclick="createScheme($(this))">
+                <span>Create</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="staticBackdrop1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdrop1Label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="staticBackdrop1Label">Edit Saving Scheme</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="scheme-id">
+              <div class="mb-3">
+                <label for="startMonthEdit" class="form-label">From</label>
+                <input type="month" class="form-control" id="startMonthEdit" />
+              </div>
+              <div class="mb-3">
+                <label for="endMonthEdit" class="form-label">To</label>
+                <input type="month" class="form-control" id="endMonthEdit" />
+              </div>
+              <div class="mb-3">
+                <label for="amountEdit" class="form-label">Amount</label>
+                <div class="input-group">
+                  <span class="input-group-text">₦</span>
+                  <input type="text" class="form-control" id="amountEdit" />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="rounded-2 bg-danger text-white py-1 px-2 my-3 me-auto" id="errorLogEdit"></div>
+              <button type="button" class="btn btn-secondary btn-sm rounded-1" data-bs-dismiss="modal">Cancel</button>
+              <button id="edit-scheme" type="button" class="btn btn-success btn-sm rounded-1 position-relative" onclick="saveSchemeEdit($(this))">
+                <span>Save</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="exampleModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Delete Scheme</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              Deleting this scheme is irreversible. Do you want to delete it?
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" id="deleteSchemeBtn" class="btn btn-sm btn-danger position-relative" onclick="emitDelete($(this))">
+                <span>Delete</span>
+                <img src="/images/loader.gif" width="20" class="position-absolute top-50 start-50 translate-middle invisible">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script src="http://localhost:8000/socket.io/socket.io.js"></script>
+      <script src="/jquery/toast.js"></script>
+      <script src="/chart/chart.umd.min.js"></script>
+      <script>
+
+        let schemeId = null;
+        const socket = io();
+        var myModalEl = document.getElementById('staticBackdrop');
+        var myModalElX = document.getElementById('staticBackdrop1');
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        
+        $('div#errorLog, div#errorLogEdit').html('').hide();
+
+        var myModal = new bootstrap.Modal(myModalEl, {});
+        var editModal = new bootstrap.Modal(myModalElX, {});
+        var exampleModal = new bootstrap.Modal(document.getElementById('exampleModal'), {});
+
+        myModalEl.addEventListener('hidden.bs.modal', () => {
+          $('div#errorLog').hide();
+          $('input#startMonth, input#endMonth, input#amount').val('');
+        });
+        
+        myModalElX.addEventListener('hidden.bs.modal', () => {
+          $('div#errorLogEdit').hide();
+          $('input#scheme-id, input#startMonthEdit, input#endMonthEdit, input#amountEdit').val('');
+        });
+
+        function createScheme($this) {
+          const startMonth = $('input#startMonth').val();
+          const endMonth = $('input#endMonth').val();
+          const amount = parseInt($('input#amount').val()) || 0;
+          if(startMonth.length == 0){
+            $('div#errorLog').html('Please select a starting month').show();
+            return;
+          }
+          if(endMonth.length == 0){
+            $('div#errorLog').html('Please select a ending month').show();
+            return;
+          }
+          if(amount == 0){
+            $('div#errorLog').html('Please specify the scheme amount').show();
+            return;
+          }
+          const startDate = new Date(startMonth);
+          const endDate = new Date(endMonth);
+          if(endDate < startDate){
+            $('div#errorLog').html('Your ending month is negative to starting month').show();
+            return;
+          }
+          $('div#errorLog').html('').hide();
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          const data = {
+            startMonth: startMonth,
+            endMonth: endMonth,
+            amount: amount
+          };
+          socket.emit('create-scheme', data);
+        }
+
+        socket.on('create-scheme', (emitData) => {
+          $('button#create-scheme').prop('disabled', false);
+          $('button#create-scheme > span').removeClass('invisible');
+          $('button#create-scheme > img').addClass('invisible');
+          if(!emitData.success){
+            $('div#errorLog').html(emitData.message).show();
+            return;
+          }
+          myModal.hide();
+
+          const hasNoData = $('div[data-for-scheme-view]').length == 0;
+          if(hasNoData)
+            $('div#container').html('<h2 class="text-center" id="textHeader">Saving Scheme</h2>');
+          
+          const $view = createView(emitData);
+          $('h2#textHeader').after($view);
+
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Scheme Successfully Created</span>');
+          toast.show();
+        });
+
+        socket.on('edit-scheme', (emitData) => {
+          const schemeId = emitData.schemeId.toString();
+          $('button#edit-scheme').prop('disabled', false);
+          $('button#edit-scheme > span').removeClass('invisible');
+          $('button#edit-scheme > img').addClass('invisible');
+          if(!emitData.success){
+            $('div#errorLogEdit').html(emitData.message).show();
+            return;
+          }
+          editModal.hide();
+
+          const $view = createView(emitData);
+          $(`div#${schemeId}`).replaceWith($view);
+
+          const toast = new Toast('<span class="text-success"><i class="bi bi-check-square-fill me-2"></i>Scheme Successfully Updated</span>');
+          toast.show();
+        });
+
+        socket.on('delete-scheme', (emitData) => {
+          $('button#deleteSchemeBtn').prop('disabled', false);
+          $('button#deleteSchemeBtn span').removeClass('invisible');
+          $('button#deleteSchemeBtn img').addClass('invisible');
+          exampleModal.hide();
+          if(!emitData.success){
+            const toast = new Toast(`<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>${emitData.message}</span>`);
+            toast.show();
+            return;
+          }
+          $('div#'+emitData.schemeId).remove();
+          const hasNoData = $('div[data-for-scheme-view]').length == 0;
+          if(hasNoData){
+            const xData = `
+              <div class="text-center mt-5" id="no-data">
+                <img src="/images/no-data.png" width="300">
+                <h3>No Data Available</h3>
+              </div>
+            `;
+            $('div#container').html(xData);
+          }
+          const toast = new Toast('<span class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Scheme Deleted</span>');
+          toast.show();
+        });
+
+        function createView(scheme){
+          const schemeId = scheme.schemeId.toString();
+          const [sYear, sMon] = scheme.startDate.split('-');
+          const sMonIndex = parseInt(sMon) - 1;
+          const sMonth = months[sMonIndex];
+          const [eYear, eMon] = scheme.endDate.split('-');
+          const eMonIndex = parseInt(eMon) - 1;
+          const eMonth = months[eMonIndex];
+          let view = `
+              <div id="${schemeId}" data-for-scheme-view class="shadow card d-flex flex-row my-5 position-relative">
+                <div class="text-center text-white p-5 bg-info d-flex flex-column justify-content-center align-items-center" style="width: 120px;">
+                  <span class="fs-6">From:</span>
+                  <span class="fs-2">${sYear}</span>
+                  <span class="fs-5">${sMonth}</span>
+                </div>
+                <div class="flex-grow-1 position-relative">
+                  <div id="schemeView-${schemeId}" class="position-absolute top-0 bottom-0 start-0 end-0 text-nowrap overflow-x-auto text-center pt-3">`;
+                    if(scheme.schemeIsActive){
+                      const totalIncome = '₦'+new Intl.NumberFormat('en-US').format(scheme.totalIncome);
+                      const minAmount = '₦'+new Intl.NumberFormat('en-US').format(scheme.minAmount);
+                      const saved = '₦'+new Intl.NumberFormat('en-US').format(scheme.saved);
+                      const progress = `${scheme.progress}%`;
+                      const dataArray = [
+                        {icon: 'bi-cash-stack', title: 'Total Income', value: totalIncome},
+                        {icon: 'bi-bar-chart', title: 'Goal Target', value: minAmount},
+                        {icon: 'bi-piggy-bank', title: 'Currently Saved', value: saved},
+                        {icon: 'bi-graph-up-arrow', title: 'Goal Progress', value: progress}
+                      ];
+                      view += `<div class="row mt-3 mx-1">`;
+                      for(const data of dataArray){
+                        view += `<div class="col-12 col-md-6 col-lg-3">
+                          <div class="row shadow px-2 py-3 my-2 bg-light rounded" style="margin: auto 0px;">
+                            <div class="col-8 height-100 d-flex align-items-center justify-content-center">
+                              <div class="w-100 text-start">
+                                <nav class="fs-4 text-info">${data.value}</nav>
+                                <nav class="fs-13 fw-bold text-slategrey">${data.title}</nav>
+                              </div>
+                            </div>
+                            <div class="col-4 height-100 d-flex align-items-center justify-content-center">
+                              <div class="w-100 text-end text-info" style="font-size: 35px;"><i class="bi ${data.icon}"></i></div>
+                            </div>
+                          </div>
+                        </div>`;
+                      }
+                      view += `</div>`;
+                    } else {
+                      view += `<h5 class="text-center mt-5 mb-3">
+                        You don't have any budget within the time frame of this Scheme
+                      </h5>
+                      <nav class="text-center">
+                        <a class="link-primary link-underline cursor-pointer"
+                          data-for-scheme-id="${schemeId}"
+                          data-for-scheme-end-date="${scheme.endDate}"
+                          data-for-scheme-start-date="${scheme.startDate}"
+                          data-for-scheme-min-amount="${scheme.minAmount}"
+                          onclick="editScheme($(this))">Edit</a>
+                        <span> this scheme or </span>
+                        <a href="/budgets" class="link-primary link-underline">Create a New Budget</a>
+                        <span> to match the time frame</span>
+                      </nav>`;
+                    }
+                  view += `</div>
+                </div>
+                <div class="text-center text-white p-5 bg-info d-flex flex-column justify-content-center align-items-center" style="width: 120px;">
+                  <span class="fs-6">To:</span>
+                  <span class="fs-2">${eYear}</span>
+                  <span class="fs-5">${eMonth}</span>
+                </div>
+                <div class="position-absolute d-flex top-0 start-50 translate-middle justify-content-evenly">
+                  <button id="edit-btn-${schemeId}" class="btn btn-sm btn-success mx-2" data-for-edit
+                  data-for-scheme-id="${schemeId}"
+                  data-for-scheme-end-date="${scheme.endDate}"
+                  data-for-scheme-start-date="${scheme.startDate}"
+                  data-for-scheme-min-amount="${scheme.minAmount}"
+                  onclick="editScheme($(this))"
+                  title="Edit Scheme">
+                    <i class="bi bi-pencil-square me-1"></i>Edit
+                  </button>
+                  <button class="btn btn-sm btn-danger mx-2" data-scheme-id="${schemeId}" onclick="deleteScheme($(this))" title="Delete Scheme">
+                    <i class="bi bi-trash3 me-1"></i>Delete
+                  </button>
+                </div>
+              </div>
+          `;
+          return $(view);
+        }
+        
+        function deleteScheme($this){
+          schemeId = $this.attr('data-scheme-id');
+          exampleModal.show();
+        }
+
+        function emitDelete($this){
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          socket.emit('delete-scheme', {schemeId: schemeId}); 
+        }
+
+        function editScheme($this){
+          editModal.show();
+          const schemeId = $this.attr('data-for-scheme-id');
+          const startDate = $this.attr('data-for-scheme-start-date');
+          const endDate = $this.attr('data-for-scheme-end-date');
+          const minAmount = $this.attr('data-for-scheme-min-amount');
+
+          $('input#scheme-id').val(schemeId);
+          $('input#startMonthEdit').val(startDate);
+          $('input#endMonthEdit').val(endDate);
+          $('input#amountEdit').val(minAmount);
+        }
+
+        function saveSchemeEdit($this) {
+          const schemeId = $('input#scheme-id').val();
+          const startMonth = $('input#startMonthEdit').val();
+          const endMonth = $('input#endMonthEdit').val();
+          const amount = parseInt($('input#amountEdit').val()) || 0;
+          if(startMonth.length == 0){
+            $('div#errorLogEdit').html('Please select a starting month').show();
+            return;
+          }
+          if(endMonth.length == 0){
+            $('div#errorLogEdit').html('Please select a ending month').show();
+            return;
+          }
+          if(amount == 0){
+            $('div#errorLogEdit').html('Please specify the scheme amount').show();
+            return;
+          }
+          const startDate = new Date(startMonth);
+          const endDate = new Date(endMonth);
+          if(endDate < startDate){
+            $('div#errorLogEdit').html('Your ending month is negative to starting month').show();
+            return;
+          }
+          $('div#errorLogEdit').html('').hide();
+          $this.prop('disabled', true);
+          $this.find('span').addClass('invisible');
+          $this.find('img').removeClass('invisible');
+          const data = {
+            schemeId: schemeId,
+            startMonth: startMonth,
+            endMonth: endMonth,
+            amount: amount
+          };
+          socket.emit('edit-scheme', data);
+        }
+
+
+      </script>
+</body>
+</html>

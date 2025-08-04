@@ -132,16 +132,18 @@
                 </div>
               </div>
               <%
-              categoryData.categoryList.sort();
-              for(const categoryName of categoryData.categoryList){
-                %>
-                <div data-for-c-name="<%= categoryName %>" class="card p-2 d-flex my-2 rounded-1 flex-row align-items-center">
-                  <nav class="flex-grow-1"><%= categoryName %></nav>
-                  <button class="btn btn-sm btn-danger" data-category-name="<%= categoryName %>" onclick="deleteCategoryName($(this))" title="Delete Category">
-                    <i class="bi bi-trash3"></i>
-                  </button>
-                </div>
-                <%
+              if(categoryData){
+                  categoryData.categoryList.sort();
+                  for(const categoryName of categoryData.categoryList){
+                    %>
+                    <div data-for-c-name="<%= categoryName %>" class="card p-2 d-flex my-2 rounded-1 flex-row align-items-center">
+                      <nav class="flex-grow-1"><%= categoryName %></nav>
+                      <button class="btn btn-sm btn-danger" data-category-name="<%= categoryName %>" onclick="deleteCategoryName($(this))" title="Delete Category">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                    <%
+                  }
               }
               %>
             </div>
